@@ -441,6 +441,77 @@ button.primary:disabled {
   color: var(--muted);
 }
 
+/* ---------- Alternador entre ferramentas ---------- */
+.tool-switch {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+
+.tool-switch a {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tool-switch a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Semáforo (ferramenta genAI) ---------- */
+.risk-badge {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+}
+
+.risk-red {
+  background: rgba(214, 69, 69, 0.12);
+  color: var(--required);
+}
+
+.risk-amber {
+  background: rgba(217, 131, 36, 0.14);
+  color: var(--likely);
+}
+
+.risk-green {
+  background: rgba(47, 158, 95, 0.14);
+  color: var(--not);
+}
+
+.dos-donts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.dos-donts h3 {
+  margin-top: 0.5rem;
+}
+
+.dos-donts ul {
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.dont-col ul {
+  padding-left: 1.1rem;
+}
+
+.do-col ul {
+  padding-left: 1.1rem;
+}
+
+@media (max-width: 560px) {
+  .dos-donts {
+    grid-template-columns: 1fr;
+  }
+}
+
 .result h3 {
   margin: 1.2rem 0 0.4rem;
   font-size: 1rem;

@@ -4,6 +4,7 @@ import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
 import AuthorsPage from './pages/AuthorsPage'
 import AboutPage from './pages/AboutPage'
+import GenAiPage from './pages/GenAiPage'
 
 function useHashRoute(): string {
   const [hash, setHash] = useState(() => window.location.hash || '#/')
@@ -29,6 +30,8 @@ export default function App() {
           <AuthorsPage />
         ) : route === '#/sobre' ? (
           <AboutPage />
+        ) : route === '#/genai' ? (
+          <GenAiPage />
         ) : (
           <HomePage />
         )}

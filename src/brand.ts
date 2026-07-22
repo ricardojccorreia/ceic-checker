@@ -3,7 +3,7 @@
  * Todo o conteúdo institucional está centralizado neste ficheiro.
  */
 
-export const APP_VERSION = '0.2.0'
+export const APP_VERSION = '0.3.0'
 /** Versão do enquadramento regulamentar refletido nas regras de decisão. */
 export const REG_VERSION = 'julho de 2026'
 
@@ -26,10 +26,18 @@ export interface NavLink {
 }
 
 export const NAV: NavLink[] = [
-  { label: 'Verificador', href: '#/' },
-  { label: 'Sobre a ferramenta', href: '#/sobre' },
-  { label: 'Autores e contactos', href: '#/autores' },
+  { label: 'Apreciação ética', href: '#/' },
+  { label: 'genAI com dados', href: '#/genai' },
+  { label: 'Sobre', href: '#/sobre' },
+  { label: 'Autores', href: '#/autores' },
 ]
+
+/** Segunda ferramenta: uso responsável de genAI com dados confidenciais. */
+export const GENAI = {
+  tagline: 'Posso usar esta ferramenta de genAI com estes dados?',
+  intro:
+    'Guia rápido para profissionais de saúde que criam pequenos sistemas com IA generativa (ChatGPT, Gemini, Copilot e semelhantes). Ajuda a evitar o tratamento ilegal de dados confidenciais de doentes. Nenhuma resposta é enviada nem armazenada.',
+}
 
 export const USEFUL_LINKS: NavLink[] = [
   { label: 'CEIC — página oficial', href: 'https://www.ceic.pt/', external: true },
@@ -67,7 +75,7 @@ export const AUTHORS: Author[] = [
     role: 'Idealização e desenvolvimento',
     affiliations: ['RISE-Health (investigador)', 'Virtualcare'],
     email: 'rcorreia@virtualcare.pt',
-    linkedin: '', // TODO: colocar o URL do LinkedIn (ex.: https://www.linkedin.com/in/...)
+    linkedin: 'https://www.linkedin.com/in/ricardojccorreia/',
   },
   {
     name: 'Pedro Barata',
@@ -77,6 +85,19 @@ export const AUTHORS: Author[] = [
       'RISE-Health (investigador)',
     ],
     email: 'ceic@ceic.pt',
+    linkedin: 'https://www.linkedin.com/in/pedrobaratamdphd/',
+  },
+  {
+    name: 'Mariana Pais',
+    role: 'Conceção da ferramenta de uso de genAI com dados',
+    affiliations: ['Ciência e Letras', 'RISE-Health (investigadora)'],
+    linkedin: 'https://www.linkedin.com/in/mariana-canelas-pais-304489175/',
+  },
+  {
+    name: 'Helder Palheira',
+    role: 'Conceção da ferramenta de uso de genAI com dados',
+    affiliations: ['Ciência e Letras', 'RISE-Health (investigador)'],
+    linkedin: 'https://www.linkedin.com/in/helderpalheira/',
   },
 ]
 
@@ -115,6 +136,7 @@ export const ABOUT = {
     { label: 'RGPD e enquadramento nacional de proteção de dados (CNPD)', url: 'https://www.cnpd.pt/' },
   ],
   changelog: [
+    { version: '0.3.0', date: '2026-07', notes: 'Nova ferramenta: uso responsável de IA generativa (genAI) com dados confidenciais, com resultado em semáforo e orientação prática.' },
     { version: '0.2.0', date: '2026-07', notes: 'Redesenho: fluxo ramificado, separação de circuitos (comissão institucional / CEIC / INFARMED / CTIS / RGPD), ramo para software/IA e dispositivos, resultado em duas dimensões.' },
     { version: '0.1.0', date: '2026-07', notes: 'Primeira versão: questionário simples com quatro veredictos.' },
   ],

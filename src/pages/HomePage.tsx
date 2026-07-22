@@ -137,6 +137,10 @@ export default function HomePage() {
 
   return (
     <>
+      <p className="tool-switch">
+        Ferramenta 1 de 2 · <a href="#/genai">Uso de genAI com dados confidenciais →</a>
+      </p>
+
       <section className="hero">
         <h1>{BRAND.tagline}</h1>
         <p>{BRAND.intro}</p>
