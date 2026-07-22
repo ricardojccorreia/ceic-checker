@@ -441,6 +441,120 @@ button.primary:disabled {
   color: var(--muted);
 }
 
+abbr[title] {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: help;
+}
+
+/* ---------- Barra de progresso ---------- */
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--blue));
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.progress-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------- Avisos e referências ---------- */
+.warn-note {
+  margin: -0.75rem 0 1.75rem;
+  font-size: 0.85rem;
+  color: var(--likely);
+}
+
+.q-ref {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.q-ref:hover {
+  text-decoration: underline;
+}
+
+/* Pergunta em falta (após validação) */
+.question.missing {
+  border-color: var(--required);
+  box-shadow: 0 0 0 3px rgba(214, 69, 69, 0.15);
+}
+
+/* ---------- Caixa "O que deve fazer agora" ---------- */
+.do-now {
+  background: rgba(14, 148, 136, 0.08);
+  border: 1px solid rgba(14, 148, 136, 0.25);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.do-now strong {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--teal-dark);
+  margin-bottom: 0.25rem;
+}
+
+.do-now p {
+  margin: 0;
+}
+
+.generated-date {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+
+.mini-btn {
+  margin-top: 0.6rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--muted);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.mini-btn:hover {
+  border-color: var(--teal);
+  color: var(--teal-dark);
+}
+
+.footer-feedback {
+  margin-top: 1rem !important;
+  font-size: 0.85rem;
+}
+
+.footer-feedback a {
+  color: #4fd1c0 !important;
+}
+
 /* ---------- Alternador entre ferramentas ---------- */
 .tool-switch {
   font-size: 0.85rem;
@@ -703,6 +817,9 @@ button.primary:disabled {
   .site-header,
   .site-footer,
   .hero,
+  .tool-switch,
+  .warn-note,
+  .progress,
   .meta-fields,
   .qsection,
   .actions,

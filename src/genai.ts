@@ -13,6 +13,7 @@ export interface GenAIQuestion {
   id: string
   text: string
   help?: string
+  ref?: { label: string; url: string }
   options: QOption[]
 }
 
@@ -33,6 +34,7 @@ export const GENAI_QUESTIONS: GenAIQuestion[] = [
     id: 'anonimizado',
     text: 'Esses dados foram anonimizados de forma irreversível (impossível reidentificar) antes de serem usados?',
     help: 'Remover o nome ou usar iniciais/datas NÃO é anonimização — continua a ser possível reidentificar.',
+    ref: { label: 'CNPD — proteção de dados', url: 'https://www.cnpd.pt/' },
     options: YNU,
   },
   {

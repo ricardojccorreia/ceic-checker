@@ -7,10 +7,11 @@ import AboutPage from './pages/AboutPage'
 import GenAiPage from './pages/GenAiPage'
 
 function useHashRoute(): string {
-  const [hash, setHash] = useState(() => window.location.hash || '#/')
+  const parse = () => (window.location.hash || '#/').split('?')[0] || '#/'
+  const [hash, setHash] = useState(parse)
   useEffect(() => {
     const onChange = () => {
-      setHash(window.location.hash || '#/')
+      setHash(parse())
       window.scrollTo({ top: 0 })
     }
     window.addEventListener('hashchange', onChange)

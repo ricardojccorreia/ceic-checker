@@ -1,4 +1,9 @@
-import { BRAND, USEFUL_LINKS } from '../brand'
+import { BRAND, USEFUL_LINKS, APP_VERSION, REG_VERSION, AUTHORS } from '../brand'
+
+const FEEDBACK_SUBJECT = encodeURIComponent('Feedback / caso não previsto — Percurso Ético')
+const FEEDBACK_BODY = encodeURIComponent(
+  'O meu projeto tem características não previstas na ferramenta:\n\n(descreva o cenário)\n',
+)
 
 export default function Footer() {
   return (
@@ -37,10 +42,18 @@ export default function Footer() {
               </li>
             ))}
           </ul>
+          <p className="footer-feedback">
+            O seu projeto tem características não previstas aqui?{' '}
+            <a href={`mailto:${AUTHORS[0].email}?subject=${FEEDBACK_SUBJECT}&body=${FEEDBACK_BODY}`}>
+              Dê-nos feedback
+            </a>
+            .
+          </p>
         </div>
       </div>
       <div className="footer-bottom">
-        © {'2026'} {BRAND.name} · <a href="#/autores">Autores e contactos</a>
+        © {'2026'} {BRAND.name} · Versão {APP_VERSION} · Enquadramento revisto em {REG_VERSION} ·{' '}
+        <a href="#/autores">Autores e contactos</a>
       </div>
     </footer>
   )

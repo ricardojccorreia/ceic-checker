@@ -1,18 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { GENAI_QUESTIONS, evaluateGenAI, type Risk } from '../genai'
 import type { Answers } from '../decision'
 import { GENAI, APP_VERSION } from '../brand'
+import { encodeState, loadInitial, persist, clearPersisted, setStateParam, shareUrl } from '../url'
+import Abbr from '../components/Abbr'
 
 const RISK_CLASS: Record<Risk, string> = {
   red: 'v-required',
   amber: 'v-likely',
   green: 'v-not',
 }
-
 const RISK_LABEL: Record<Risk, string> = {
   red: '● Vermelho',
   amber: '● Amarelo',
   green: '● Verde',
+}
+
+const STORAGE_KEY = 'percurso-etico:genai'
+const PATH = '#/genai'
+
+interface Saved {
+  answers: Answers
 }
 
 function buildReport(answers: Answers): string {
@@ -21,7 +29,7 @@ function buildReport(answers: Answers): string {
   const L: string[] = []
   L.push(GENAI.tagline.toUpperCase())
   L.push('='.repeat(52))
-  L.push(`Data: ${now.toLocaleString('pt-PT')} · Versão: ${APP_VERSION}`)
+  L.push(`Documento gerado a ${now.toLocaleString('pt-PT')} · Versão: ${APP_VERSION}`)
   L.push('')
   L.push(`RESULTADO (${RISK_LABEL[r.risk]}): ${r.title}`)
   L.push(r.summary)
@@ -37,31 +45,70 @@ function buildReport(answers: Answers): string {
   L.push('FAZER:')
   r.dos.forEach((x) => L.push(`  • ${x}`))
   L.push('')
-  L.push(
-    'AVISO: orientação, não aconselhamento jurídico. Nenhuma resposta é enviada nem armazenada.',
-  )
+  L.push('AVISO: orientação, não aconselhamento jurídico. Nenhuma resposta é enviada nem armazenada.')
   return L.join('\n')
 }
 
 export default function GenAiPage() {
-  const [answers, setAnswers] = useState<Answers>({})
+  const initial = useMemo(() => loadInitial<Saved>(STORAGE_KEY), [])
+  const [answers, setAnswers] = useState<Answers>(initial?.answers ?? {})
   const [submitted, setSubmitted] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState('')
+  const [missing, setMissing] = useState<string | null>(null)
 
-  const allAnswered = GENAI_QUESTIONS.every((q) => answers[q.id] != null)
+  const answeredCount = GENAI_QUESTIONS.filter((q) => answers[q.id] != null).length
+  const total = GENAI_QUESTIONS.length
+  const pct = Math.round((answeredCount / total) * 100)
+  const allAnswered = answeredCount === total
   const result = useMemo(() => (submitted ? evaluateGenAI(answers) : null), [submitted, answers])
+
+  useEffect(() => {
+    const empty = Object.keys(answers).length === 0
+    persist(STORAGE_KEY, { answers })
+    setStateParam(PATH, empty ? null : encodeState({ answers }))
+  }, [answers])
 
   function setAnswer(id: string, value: string) {
     setAnswers((prev) => ({ ...prev, [id]: value }))
+    if (missing === id) setMissing(null)
     setSubmitted(false)
   }
-
   function reset() {
     setAnswers({})
     setSubmitted(false)
+    setMissing(null)
+    clearPersisted(STORAGE_KEY)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+  function onSubmit() {
+    const firstMissing = GENAI_QUESTIONS.find((q) => answers[q.id] == null)
+    if (firstMissing) {
+      setMissing(firstMissing.id)
+      setSubmitted(false)
+      setTimeout(() => {
+        document
+          .getElementById(`q-${firstMissing.id}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 30)
+      return
+    }
+    setMissing(null)
+    setSubmitted(true)
+    setTimeout(() => document.getElementById('resultado')?.scrollIntoView({ behavior: 'smooth' }), 50)
+  }
 
+  function flash(key: string) {
+    setCopied(key)
+    setTimeout(() => setCopied(''), 2000)
+  }
+  async function copyText(text: string, key: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      flash(key)
+    } catch {
+      /* clipboard indisponível */
+    }
+  }
   function download() {
     const blob = new Blob([buildReport(answers)], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -72,16 +119,6 @@ export default function GenAiPage() {
     URL.revokeObjectURL(url)
   }
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(buildReport(answers))
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      /* clipboard indisponível */
-    }
-  }
-
   return (
     <>
       <p className="tool-switch">
@@ -90,17 +127,39 @@ export default function GenAiPage() {
 
       <section className="hero">
         <h1>{GENAI.tagline}</h1>
-        <p>{GENAI.intro}</p>
+        <p>
+          <Abbr>{GENAI.intro}</Abbr>
+        </p>
       </section>
+
+      <div className="progress no-print" aria-hidden="true">
+        <div className="progress-track">
+          <div className="progress-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <span className="progress-label">
+          {answeredCount} de {total} perguntas · {pct}%
+        </span>
+      </div>
 
       <ol className="questions">
         {GENAI_QUESTIONS.map((q, i) => (
-          <li key={q.id} className="question">
+          <li key={q.id} id={`q-${q.id}`} className={`question ${missing === q.id ? 'missing' : ''}`}>
             <div className="question-text">
               <span className="q-num">{i + 1}.</span>
               <div>
-                <p>{q.text}</p>
-                {q.help && <p className="help">{q.help}</p>}
+                <p>
+                  <Abbr>{q.text}</Abbr>
+                </p>
+                {q.help && (
+                  <p className="help">
+                    <Abbr>{q.help}</Abbr>
+                  </p>
+                )}
+                {q.ref && (
+                  <a className="q-ref" href={q.ref.url} target="_blank" rel="noopener noreferrer">
+                    <Abbr>{q.ref.label}</Abbr> ↗
+                  </a>
+                )}
               </div>
             </div>
             <div className="options options-wrap" role="group" aria-label={q.text}>
@@ -121,25 +180,17 @@ export default function GenAiPage() {
       </ol>
 
       <div className="actions">
-        <button
-          type="button"
-          className="primary"
-          disabled={!allAnswered}
-          onClick={() => {
-            setSubmitted(true)
-            setTimeout(
-              () => document.getElementById('resultado')?.scrollIntoView({ behavior: 'smooth' }),
-              50,
-            )
-          }}
-        >
+        <button type="button" className="primary" onClick={onSubmit}>
           Ver resultado
         </button>
-        {!allAnswered && <span className="hint">Responda a todas as perguntas para continuar.</span>}
+        {!allAnswered && (
+          <span className="hint">Faltam {total - answeredCount} — clique para ir à primeira.</span>
+        )}
       </div>
 
       {result && (
         <section id="resultado" className={`result ${RISK_CLASS[result.risk]}`} aria-live="polite">
+          <p className="generated-date">Documento gerado a {new Date().toLocaleString('pt-PT')}</p>
           <span className={`risk-badge risk-${result.risk}`}>{RISK_LABEL[result.risk]}</span>
           <h2>{result.title}</h2>
           <p>{result.summary}</p>
@@ -149,7 +200,9 @@ export default function GenAiPage() {
               <h3>Porquê</h3>
               <ul>
                 {result.reasons.map((r, i) => (
-                  <li key={i}>{r}</li>
+                  <li key={i}>
+                    <Abbr>{r}</Abbr>
+                  </li>
                 ))}
               </ul>
             </>
@@ -160,7 +213,9 @@ export default function GenAiPage() {
               <h3>❌ Não fazer</h3>
               <ul>
                 {result.donts.map((r, i) => (
-                  <li key={i}>{r}</li>
+                  <li key={i}>
+                    <Abbr>{r}</Abbr>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -168,18 +223,23 @@ export default function GenAiPage() {
               <h3>✅ Fazer</h3>
               <ul>
                 {result.dos.map((r, i) => (
-                  <li key={i}>{r}</li>
+                  <li key={i}>
+                    <Abbr>{r}</Abbr>
+                  </li>
                 ))}
               </ul>
             </div>
           </div>
 
           <div className="result-actions no-print">
+            <button type="button" onClick={() => copyText(buildReport(answers), 'resumo')}>
+              {copied === 'resumo' ? 'Copiado ✓' : 'Copiar resumo'}
+            </button>
             <button type="button" onClick={download}>
               Descarregar (.txt)
             </button>
-            <button type="button" onClick={copy}>
-              {copied ? 'Copiado ✓' : 'Copiar resumo'}
+            <button type="button" onClick={() => copyText(shareUrl(PATH, encodeState({ answers })), 'link')}>
+              {copied === 'link' ? 'Link copiado ✓' : 'Copiar link'}
             </button>
             <button type="button" onClick={() => window.print()}>
               Imprimir / PDF
@@ -189,7 +249,7 @@ export default function GenAiPage() {
             </button>
           </div>
           <p className="privacy-note">
-            Nenhuma resposta é enviada nem armazenada — todo o processamento ocorre no seu navegador.
+            Nenhuma resposta é enviada nem armazenada — o processamento ocorre no seu navegador.
           </p>
         </section>
       )}

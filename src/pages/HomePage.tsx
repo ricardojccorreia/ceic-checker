@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   SECTIONS,
   QUESTIONS,
@@ -8,6 +8,8 @@ import {
   type NeedLevel,
 } from '../decision'
 import { BRAND, APP_VERSION, REG_VERSION } from '../brand'
+import { encodeState, loadInitial, persist, clearPersisted, setStateParam, shareUrl } from '../url'
+import Abbr from '../components/Abbr'
 
 const NEED_CLASS: Record<NeedLevel, string> = {
   none_now: 'v-not',
@@ -16,21 +18,30 @@ const NEED_CLASS: Record<NeedLevel, string> = {
   required: 'v-required',
 }
 
+const STORAGE_KEY = 'percurso-etico:home'
+const PATH = '#/'
+
 interface Meta {
   titulo: string
   instituicao: string
 }
+interface Saved {
+  answers: Answers
+  meta: Meta
+}
 
-function buildReport(answers: Answers, meta: Meta): string {
+function conclusionBlock(answers: Answers, meta: Meta): string {
   const r = evaluate(answers)
   const now = new Date()
   const L: string[] = []
   L.push(BRAND.tagline.toUpperCase())
   L.push('='.repeat(52))
-  L.push(`Data da avaliação: ${now.toLocaleString('pt-PT')}`)
+  L.push(`Documento gerado a ${now.toLocaleString('pt-PT')}`)
   L.push(`Versão da ferramenta: ${APP_VERSION} · Enquadramento: ${REG_VERSION}`)
   if (meta.titulo) L.push(`Projeto: ${meta.titulo}`)
   if (meta.instituicao) L.push(`Instituição: ${meta.instituicao}`)
+  L.push('')
+  L.push(`O QUE DEVE FAZER AGORA: ${r.nextSteps[0] ?? '—'}`)
   L.push('')
   L.push(`CONCLUSÃO — ${r.need.title}`)
   L.push(r.need.summary)
@@ -38,14 +49,9 @@ function buildReport(answers: Answers, meta: Meta): string {
   if (r.circuits.length) {
     L.push('CIRCUITO(S) PROVÁVEL(IS):')
     r.circuits.forEach((c) => {
-      L.push(`  • ${c.label}`)
+      L.push(`  • ${c.label}${c.url ? ` (${c.url})` : ''}`)
       if (c.note) L.push(`      ${c.note}`)
     })
-    L.push('')
-  }
-  if (r.reasons.length) {
-    L.push('FUNDAMENTAÇÃO:')
-    r.reasons.forEach((x) => L.push(`  • ${x}`))
     L.push('')
   }
   if (r.pending.length) {
@@ -58,6 +64,11 @@ function buildReport(answers: Answers, meta: Meta): string {
     r.nextSteps.forEach((x) => L.push(`  • ${x}`))
     L.push('')
   }
+  return L.join('\n')
+}
+
+function buildFull(answers: Answers, meta: Meta): string {
+  const L = [conclusionBlock(answers, meta)]
   L.push('RESPOSTAS DADAS:')
   visibleQuestions(answers).forEach((q) => {
     const opt = q.options.find((o) => o.value === answers[q.id])
@@ -73,26 +84,46 @@ function buildReport(answers: Answers, meta: Meta): string {
   return L.join('\n')
 }
 
+function buildPending(answers: Answers): string {
+  const r = evaluate(answers)
+  if (!r.pending.length) return 'Não há questões por esclarecer identificadas.'
+  return (
+    'Para concluir o enquadramento do projeto, é necessário confirmar:\n' +
+    r.pending.map((x) => `– ${x}`).join('\n')
+  )
+}
+
 export default function HomePage() {
-  const [answers, setAnswers] = useState<Answers>({})
-  const [meta, setMeta] = useState<Meta>({ titulo: '', instituicao: '' })
+  const initial = useMemo(() => loadInitial<Saved>(STORAGE_KEY), [])
+  const [answers, setAnswers] = useState<Answers>(initial?.answers ?? {})
+  const [meta, setMeta] = useState<Meta>(initial?.meta ?? { titulo: '', instituicao: '' })
   const [submitted, setSubmitted] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState('')
+  const [missing, setMissing] = useState<string | null>(null)
 
   const visible = useMemo(() => visibleQuestions(answers), [answers])
-  const allAnswered = visible.every((q) => answers[q.id] != null)
+  const answeredCount = visible.filter((q) => answers[q.id] != null).length
+  const total = visible.length
+  const pct = total ? Math.round((answeredCount / total) * 100) : 0
+  const allAnswered = answeredCount === total
   const result = useMemo(() => (submitted ? evaluate(answers) : null), [submitted, answers])
+
+  // Guardar no URL e no localStorage sempre que muda.
+  useEffect(() => {
+    const empty = Object.keys(answers).length === 0 && !meta.titulo && !meta.instituicao
+    const payload: Saved = { answers, meta }
+    persist(STORAGE_KEY, payload)
+    setStateParam(PATH, empty ? null : encodeState(payload))
+  }, [answers, meta])
 
   function setAnswer(id: string, value: string) {
     setAnswers((prev) => {
       const next = { ...prev, [id]: value }
-      // Limpar respostas de perguntas que deixaram de estar visíveis.
       const stillVisible = new Set(visibleQuestions(next).map((q) => q.id))
-      for (const key of Object.keys(next)) {
-        if (!stillVisible.has(key)) delete next[key]
-      }
+      for (const key of Object.keys(next)) if (!stillVisible.has(key)) delete next[key]
       return next
     })
+    if (missing === id) setMissing(null)
     setSubmitted(false)
   }
 
@@ -100,11 +131,45 @@ export default function HomePage() {
     setAnswers({})
     setMeta({ titulo: '', instituicao: '' })
     setSubmitted(false)
+    setMissing(null)
+    clearPersisted(STORAGE_KEY)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  function onSubmit() {
+    const firstMissing = visible.find((q) => answers[q.id] == null)
+    if (firstMissing) {
+      setMissing(firstMissing.id)
+      setSubmitted(false)
+      setTimeout(() => {
+        document
+          .getElementById(`q-${firstMissing.id}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 30)
+      return
+    }
+    setMissing(null)
+    setSubmitted(true)
+    setTimeout(
+      () => document.getElementById('resultado')?.scrollIntoView({ behavior: 'smooth' }),
+      50,
+    )
+  }
+
+  function flash(key: string) {
+    setCopied(key)
+    setTimeout(() => setCopied(''), 2000)
+  }
+  async function copyText(text: string, key: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      flash(key)
+    } catch {
+      /* clipboard indisponível */
+    }
+  }
   function download() {
-    const blob = new Blob([buildReport(answers, meta)], { type: 'text/plain;charset=utf-8' })
+    const blob = new Blob([buildFull(answers, meta)], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -112,24 +177,15 @@ export default function HomePage() {
     a.click()
     URL.revokeObjectURL(url)
   }
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(buildReport(answers, meta))
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      /* clipboard indisponível */
-    }
+  function copyLink() {
+    copyText(shareUrl(PATH, encodeState({ answers, meta })), 'link')
   }
-
   function sendEmail() {
     const subject = encodeURIComponent(BRAND.tagline)
-    const body = encodeURIComponent(buildReport(answers, meta))
+    const body = encodeURIComponent(buildFull(answers, meta))
     window.location.href = `mailto:?subject=${subject}&body=${body}`
   }
 
-  // Secções com pelo menos uma pergunta visível.
   const sectionsToShow = SECTIONS.map((s) => ({
     section: s,
     qs: visible.filter((q) => q.section === s.id),
@@ -138,13 +194,22 @@ export default function HomePage() {
   return (
     <>
       <p className="tool-switch">
-        Ferramenta 1 de 2 · <a href="#/genai">Uso de genAI com dados confidenciais →</a>
+        Ferramenta 1 de 2 · <a href="#/genai">Uso de <Abbr>genAI</Abbr> com dados confidenciais →</a>
       </p>
 
       <section className="hero">
         <h1>{BRAND.tagline}</h1>
         <p>{BRAND.intro}</p>
       </section>
+
+      <div className="progress no-print" aria-hidden="true">
+        <div className="progress-track">
+          <div className="progress-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <span className="progress-label">
+          {answeredCount} de {total} perguntas · {pct}%
+        </span>
+      </div>
 
       <div className="meta-fields">
         <label>
@@ -166,6 +231,10 @@ export default function HomePage() {
           />
         </label>
       </div>
+      <p className="warn-note">
+        ⚠️ Não introduza nomes de doentes, números de processo clínico ou outra informação pessoal
+        nestes campos.
+      </p>
 
       {sectionsToShow.map(({ section, qs }) => (
         <section key={section.id} className="qsection">
@@ -174,12 +243,27 @@ export default function HomePage() {
             {qs.map((q) => {
               const idx = QUESTIONS.findIndex((x) => x.id === q.id)
               return (
-                <li key={q.id} className="question">
+                <li
+                  key={q.id}
+                  id={`q-${q.id}`}
+                  className={`question ${missing === q.id ? 'missing' : ''}`}
+                >
                   <div className="question-text">
                     <span className="q-num">{idx + 1}.</span>
                     <div>
-                      <p>{q.text}</p>
-                      {q.help && <p className="help">{q.help}</p>}
+                      <p>
+                        <Abbr>{q.text}</Abbr>
+                      </p>
+                      {q.help && (
+                        <p className="help">
+                          <Abbr>{q.help}</Abbr>
+                        </p>
+                      )}
+                      {q.ref && (
+                        <a className="q-ref" href={q.ref.url} target="_blank" rel="noopener noreferrer">
+                          Porque é relevante? <Abbr>{q.ref.label}</Abbr> ↗
+                        </a>
+                      )}
                     </div>
                   </div>
                   <div className="options options-wrap" role="group" aria-label={q.text}>
@@ -203,30 +287,32 @@ export default function HomePage() {
       ))}
 
       <div className="actions">
-        <button
-          type="button"
-          className="primary"
-          disabled={!allAnswered}
-          onClick={() => {
-            setSubmitted(true)
-            setTimeout(
-              () => document.getElementById('resultado')?.scrollIntoView({ behavior: 'smooth' }),
-              50,
-            )
-          }}
-        >
+        <button type="button" className="primary" onClick={onSubmit}>
           Ver resultado
         </button>
         {!allAnswered && (
-          <span className="hint">Responda às perguntas aplicáveis para continuar.</span>
+          <span className="hint">Faltam {total - answeredCount} — clique para ir à primeira.</span>
         )}
       </div>
 
       {result && (
         <section id="resultado" className={`result ${NEED_CLASS[result.need.level]}`} aria-live="polite">
+          <p className="generated-date">Documento gerado a {new Date().toLocaleString('pt-PT')}</p>
+
+          {result.nextSteps[0] && (
+            <div className="do-now">
+              <strong>O que deve fazer agora</strong>
+              <p>
+                <Abbr>{result.nextSteps[0]}</Abbr>
+              </p>
+            </div>
+          )}
+
           <span className="result-kicker">Necessidade de apreciação</span>
           <h2>{result.need.title}</h2>
-          <p>{result.need.summary}</p>
+          <p>
+            <Abbr>{result.need.summary}</Abbr>
+          </p>
 
           {result.circuits.length > 0 && (
             <>
@@ -234,8 +320,24 @@ export default function HomePage() {
               <ul className="circuits">
                 {result.circuits.map((c, i) => (
                   <li key={i}>
-                    <strong>{c.label}</strong>
-                    {c.note && <span> — {c.note}</span>}
+                    {c.url ? (
+                      <a href={c.url} target="_blank" rel="noopener noreferrer">
+                        <strong>
+                          <Abbr>{c.label}</Abbr>
+                        </strong>{' '}
+                        ↗
+                      </a>
+                    ) : (
+                      <strong>
+                        <Abbr>{c.label}</Abbr>
+                      </strong>
+                    )}
+                    {c.note && (
+                      <span>
+                        {' '}
+                        — <Abbr>{c.note}</Abbr>
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -247,7 +349,9 @@ export default function HomePage() {
               <h3>Fundamentação</h3>
               <ul>
                 {result.reasons.map((r, i) => (
-                  <li key={i}>{r}</li>
+                  <li key={i}>
+                    <Abbr>{r}</Abbr>
+                  </li>
                 ))}
               </ul>
             </>
@@ -258,9 +362,18 @@ export default function HomePage() {
               <h3>Questões por esclarecer</h3>
               <ul>
                 {result.pending.map((r, i) => (
-                  <li key={i}>{r}</li>
+                  <li key={i}>
+                    <Abbr>{r}</Abbr>
+                  </li>
                 ))}
               </ul>
+              <button
+                type="button"
+                className="mini-btn no-print"
+                onClick={() => copyText(buildPending(answers), 'duvidas')}
+              >
+                {copied === 'duvidas' ? 'Copiado ✓' : 'Copiar lista de dúvidas'}
+              </button>
             </>
           )}
 
@@ -269,18 +382,23 @@ export default function HomePage() {
               <h3>Próximos passos</h3>
               <ul>
                 {result.nextSteps.map((r, i) => (
-                  <li key={i}>{r}</li>
+                  <li key={i}>
+                    <Abbr>{r}</Abbr>
+                  </li>
                 ))}
               </ul>
             </>
           )}
 
           <div className="result-actions no-print">
-            <button type="button" onClick={download}>
-              Descarregar (.txt)
+            <button type="button" onClick={() => copyText(conclusionBlock(answers, meta), 'resumo')}>
+              {copied === 'resumo' ? 'Copiado ✓' : 'Copiar resumo'}
             </button>
-            <button type="button" onClick={copy}>
-              {copied ? 'Copiado ✓' : 'Copiar resumo'}
+            <button type="button" onClick={download}>
+              Descarregar completo (.txt)
+            </button>
+            <button type="button" onClick={copyLink}>
+              {copied === 'link' ? 'Link copiado ✓' : 'Copiar link'}
             </button>
             <button type="button" onClick={() => window.print()}>
               Imprimir / PDF
@@ -293,7 +411,8 @@ export default function HomePage() {
             </button>
           </div>
           <p className="privacy-note">
-            Nenhuma resposta é enviada nem armazenada — todo o processamento ocorre no seu navegador.
+            Nenhuma resposta é enviada nem armazenada — o processamento ocorre no seu navegador, e o
+            link partilhável contém apenas as respostas que deu.
           </p>
         </section>
       )}

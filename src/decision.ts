@@ -25,6 +25,8 @@ export interface Question {
   text: string
   help?: string
   options: QOption[]
+  /** Ligação a fonte oficial, mostrada junto à pergunta. */
+  ref?: { label: string; url: string }
   /** Pergunta só é mostrada quando esta condição é verdadeira. */
   visibleWhen?: (a: Answers) => boolean
 }
@@ -101,7 +103,8 @@ export const QUESTIONS: Question[] = [
     id: 'formaDados',
     section: 'dados',
     text: 'Em que forma serão utilizados os dados?',
-    help: 'Remover o nome ou substituir o identificador por um código NÃO torna, por si só, os dados anónimos.',
+    help: 'Remover o nome ou substituir o identificador por um código NÃO torna, por si só, os dados anónimos. Dados pseudonimizados continuam a ser dados pessoais ao abrigo do RGPD.',
+    ref: { label: 'CNPD — proteção de dados', url: 'https://www.cnpd.pt/' },
     options: [
       { value: 'identificaveis', label: 'Diretamente identificáveis' },
       { value: 'pseudonimizados', label: 'Pseudonimizados / codificados' },
@@ -151,6 +154,11 @@ export const QUESTIONS: Question[] = [
     id: 'finalidadeMedica',
     section: 'software',
     text: 'O sistema/software tem finalidade médica (produz informação usada para diagnóstico, prognóstico, monitorização ou tratamento)?',
+    help: 'A finalidade médica ajuda a perceber se o software pode ser regulado como dispositivo médico.',
+    ref: {
+      label: 'INFARMED — investigação clínica de dispositivos',
+      url: 'https://www.infarmed.pt/web/infarmed/entidades/dispositivos-medicos/investigacao-clinica-avaliacao-funcional/investigacao_clinica',
+    },
     options: YNAU,
     visibleWhen: isInvestigacao,
   },
@@ -194,6 +202,10 @@ export const QUESTIONS: Question[] = [
     id: 'tipoRegulamentar',
     section: 'regulamentar',
     text: 'O estudo envolve algum destes produtos regulados?',
+    ref: {
+      label: 'INFARMED — investigação clínica',
+      url: 'https://www.infarmed.pt/web/infarmed/entidades/dispositivos-medicos/investigacao-clinica-avaliacao-funcional/investigacao_clinica',
+    },
     options: [
       { value: 'medicamento', label: 'Medicamento de uso humano' },
       { value: 'dispositivo', label: 'Dispositivo médico' },
@@ -277,6 +289,7 @@ const ORDER: NeedLevel[] = ['none_now', 'confirm', 'likely', 'required']
 export interface Circuit {
   label: string
   note?: string
+  url?: string
 }
 
 export interface EvalResult {
@@ -325,10 +338,14 @@ export function evaluate(a: Answers): EvalResult {
   const reasons: string[] = []
   const pending: string[] = []
   const nextSteps: string[] = []
-  const circuits = new Map<string, string | undefined>()
-  const addCircuit = (label: string, note?: string) => {
-    if (!circuits.has(label)) circuits.set(label, note)
+  const circuits = new Map<string, { note?: string; url?: string }>()
+  const addCircuit = (label: string, note?: string, url?: string) => {
+    if (!circuits.has(label)) circuits.set(label, { note, url })
   }
+  const INFARMED_DISPOSITIVOS =
+    'https://www.infarmed.pt/web/infarmed/entidades/dispositivos-medicos/investigacao-clinica-avaliacao-funcional/investigacao_clinica'
+  const CEIC_URL = 'https://www.ceic.pt/'
+  const CNPD_URL = 'https://www.cnpd.pt/'
 
   let lvl = 0 // índice em ORDER
   const bump = (l: NeedLevel) => {
@@ -372,8 +389,13 @@ export function evaluate(a: Answers): EvalResult {
     addCircuit(
       'CTIS — ensaio clínico com medicamento',
       'A submissão e a avaliação coordenada (incluindo o parecer ético) são feitas através do Clinical Trials Information System (CTIS). Não inicie o estudo antes da decisão favorável.',
+      'https://www.infarmed.pt/',
     )
-    addCircuit('CEIC — parecer ético', 'Assegurado no âmbito da avaliação coordenada do medicamento.')
+    addCircuit(
+      'CEIC — parecer ético',
+      'Assegurado no âmbito da avaliação coordenada do medicamento.',
+      CEIC_URL,
+    )
   }
 
   if (dispositivo) {
@@ -383,6 +405,7 @@ export function evaluate(a: Answers): EvalResult {
       addCircuit(
         'INFARMED (articula com a CEIC)',
         'Nas investigações clínicas de dispositivos, o pedido é dirigido ao INFARMED, que assegura a articulação com a CEIC. Não deve fazer previamente um pedido separado à comissão de ética. Não inicie antes da conclusão favorável.',
+        INFARMED_DISPOSITIVOS,
       )
     } else {
       bump('likely')
@@ -392,6 +415,7 @@ export function evaluate(a: Answers): EvalResult {
       addCircuit(
         'INFARMED — confirmar enquadramento',
         'Confirme se o estudo avalia o próprio dispositivo (investigação clínica) ou apenas o utiliza como parte do estudo.',
+        INFARMED_DISPOSITIVOS,
       )
     }
   }
@@ -403,11 +427,12 @@ export function evaluate(a: Answers): EvalResult {
       addCircuit(
         'INFARMED — estudo de desempenho de IVD (articula com a CEIC)',
         'Os estudos de desempenho de IVD seguem o circuito próprio junto do INFARMED, com articulação com a CEIC.',
+        INFARMED_DISPOSITIVOS,
       )
     } else {
       bump('likely')
       reasons.push('Envolve um dispositivo de diagnóstico in vitro (IVD).')
-      addCircuit('INFARMED — confirmar enquadramento (IVD)')
+      addCircuit('INFARMED — confirmar enquadramento (IVD)', undefined, INFARMED_DISPOSITIVOS)
     }
   }
 
@@ -420,7 +445,11 @@ export function evaluate(a: Answers): EvalResult {
     pending.push(
       'Confirmar se o software se qualifica como dispositivo médico (finalidade médica + informação específica de um doente + risco em caso de erro).',
     )
-    addCircuit('INFARMED — confirmar classificação como dispositivo médico (software)')
+    addCircuit(
+      'INFARMED — confirmar classificação como dispositivo médico (software)',
+      undefined,
+      INFARMED_DISPOSITIVOS,
+    )
     if (avaliaProprio) {
       bump('required')
       reasons.push(
@@ -478,6 +507,7 @@ export function evaluate(a: Answers): EvalResult {
     addCircuit(
       'Encarregado de Proteção de Dados (RGPD)',
       'Um parecer ético favorável não constitui, por si só, fundamento jurídico para o tratamento de dados pessoais. Confirme o fundamento legal e a eventual necessidade de uma Avaliação de Impacto sobre a Proteção de Dados (AIPD).',
+      CNPD_URL,
     )
   }
   if (is('cloudExterno', 'sim') || is('foraEEE', 'sim')) {
@@ -543,7 +573,7 @@ export function evaluate(a: Answers): EvalResult {
 
   return {
     need: { level, title: NEED_TITLE[level], summary: NEED_SUMMARY[level] },
-    circuits: Array.from(circuits, ([label, note]) => ({ label, note })),
+    circuits: Array.from(circuits, ([label, v]) => ({ label, note: v.note, url: v.url })),
     reasons,
     pending,
     nextSteps,
