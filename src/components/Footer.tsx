@@ -5,9 +5,7 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="footer-inner">
         <div className="footer-col">
-          <div className="footer-brand">
-            <strong>CEIC</strong>Check
-          </div>
+          <div className="footer-brand">{BRAND.name}</div>
           <p>{BRAND.tagline}</p>
           <p className="disclaimer">
             Ferramenta de <strong>orientação</strong>. Não substitui o parecer da CEIC nem

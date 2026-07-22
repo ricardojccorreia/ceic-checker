@@ -97,20 +97,10 @@ a {
 }
 
 .brand-text {
-  display: flex;
-  align-items: baseline;
-  gap: 0.25rem;
   font-size: 1.15rem;
   letter-spacing: -0.01em;
-}
-
-.brand-text strong {
+  font-weight: 700;
   color: var(--blue);
-}
-
-.brand-text span {
-  color: var(--teal);
-  font-weight: 600;
 }
 
 .nav {
@@ -229,6 +219,59 @@ a {
   margin: 2.25rem 0 1rem;
   padding-bottom: 0.4rem;
   border-bottom: 2px solid var(--border);
+}
+
+/* ---------- Campos de identificação ---------- */
+.meta-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.meta-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.meta-fields input {
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text);
+}
+
+.meta-fields input:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+/* ---------- Secções do questionário ---------- */
+.qsection {
+  margin-bottom: 2rem;
+}
+
+.qsection-title {
+  font-size: 1.05rem;
+  color: var(--blue);
+  margin: 0 0 0.9rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.options-wrap {
+  flex-wrap: wrap;
+}
+
+.options-wrap .option {
+  flex: 1 1 auto;
+  min-width: 120px;
 }
 
 /* ---------- Questionário ---------- */
@@ -357,9 +400,45 @@ button.primary:disabled {
   border-left-color: var(--consult);
 }
 
+.result-kicker {
+  display: inline-block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
 .result h2 {
   margin: 0 0 0.5rem;
   font-size: 1.35rem;
+}
+
+.circuits {
+  list-style: none;
+  padding-left: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.circuits li {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.circuits strong {
+  color: var(--blue);
+}
+
+.privacy-note {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 .result h3 {
@@ -454,8 +533,122 @@ button.primary:disabled {
   font-size: 0.9rem;
 }
 
+.affiliations {
+  list-style: none;
+  margin: 0.1rem 0 0.5rem;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.affiliations li::before {
+  content: '· ';
+}
+
+.author-links {
+  display: flex;
+  gap: 0.9rem;
+  font-size: 0.88rem;
+}
+
 .author-info .email {
   font-size: 0.88rem;
+}
+
+/* ---------- Página Sobre ---------- */
+.about-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.about-meta > div {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+}
+
+.about-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.about-meta strong {
+  font-size: 1.05rem;
+  color: var(--blue);
+}
+
+.about-note {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.about-list {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.changelog {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.changelog li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+}
+
+.chip {
+  background: rgba(14, 148, 136, 0.12);
+  color: var(--teal-dark);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.chip-date {
+  background: rgba(27, 75, 143, 0.1);
+  color: var(--blue);
+}
+
+/* ---------- Impressão / PDF ---------- */
+@media print {
+  .site-header,
+  .site-footer,
+  .hero,
+  .meta-fields,
+  .qsection,
+  .actions,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .result {
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 .contacts {

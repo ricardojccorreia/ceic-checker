@@ -14,10 +14,7 @@ export default function Header({ current }: { current: string }) {
           <span className="brand-mark" aria-hidden="true">
             <span className="brand-dot" />
           </span>
-          <span className="brand-text">
-            <strong>CEIC</strong>
-            <span>Check</span>
-          </span>
+          <span className="brand-text">{BRAND.name}</span>
         </a>
 
         <button

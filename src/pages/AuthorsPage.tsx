@@ -16,8 +16,8 @@ export default function AuthorsPage() {
       <section className="hero">
         <h1>Autores e contactos</h1>
         <p>
-          Este projeto resulta da colaboração entre investigação e a Comissão de Ética para a
-          Investigação Clínica.
+          Este projeto resulta da colaboração entre a investigação na RISE-Health e a Comissão de
+          Ética para a Investigação Clínica.
         </p>
       </section>
 
@@ -31,12 +31,23 @@ export default function AuthorsPage() {
             <div className="author-info">
               <h3>{a.name}</h3>
               <p className="role">{a.role}</p>
-              <p className="affiliation">{a.affiliation}</p>
-              {a.email && (
-                <a className="email" href={`mailto:${a.email}`}>
-                  {a.email}
-                </a>
-              )}
+              <ul className="affiliations">
+                {a.affiliations.map((af) => (
+                  <li key={af}>{af}</li>
+                ))}
+              </ul>
+              <div className="author-links">
+                {a.email && (
+                  <a className="email" href={`mailto:${a.email}`}>
+                    {a.email}
+                  </a>
+                )}
+                {a.linkedin && (
+                  <a href={a.linkedin} target="_blank" rel="noopener noreferrer">
+                    LinkedIn ↗
+                  </a>
+                )}
+              </div>
             </div>
           </article>
         ))}

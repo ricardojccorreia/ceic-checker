@@ -3,6 +3,7 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
 import AuthorsPage from './pages/AuthorsPage'
+import AboutPage from './pages/AboutPage'
 
 function useHashRoute(): string {
   const [hash, setHash] = useState(() => window.location.hash || '#/')
@@ -24,7 +25,13 @@ export default function App() {
     <div className="app">
       <Header current={route} />
       <main className="container">
-        {route === '#/autores' ? <AuthorsPage /> : <HomePage />}
+        {route === '#/autores' ? (
+          <AuthorsPage />
+        ) : route === '#/sobre' ? (
+          <AboutPage />
+        ) : (
+          <HomePage />
+        )}
       </main>
       <Footer />
     </div>
