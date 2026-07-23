@@ -93,6 +93,83 @@ function buildPending(answers: Answers): string {
   )
 }
 
+/** Resumo conciso, pronto a enviar por email/WhatsApp. */
+function buildSummary(answers: Answers, meta: Meta): string {
+  const r = evaluate(answers)
+  const L: string[] = []
+  L.push(`Percurso Ético — ${BRAND.tagline}`)
+  if (meta.titulo) L.push(`Projeto: ${meta.titulo}`)
+  L.push('')
+  if (r.nextSteps[0]) L.push(`O que deve fazer agora: ${r.nextSteps[0]}`)
+  L.push(`Conclusão: ${r.need.title}`)
+  if (r.circuits.length)
+    L.push(`Circuito(s) provável(is): ${r.circuits.map((c) => c.label).join('; ')}`)
+  if (r.pending.length)
+    L.push(`Questões por esclarecer: ${r.pending.length} (ver relatório completo).`)
+  return L.join('\n')
+}
+
+/** Relatório completo em Markdown. */
+function buildMarkdown(answers: Answers, meta: Meta): string {
+  const r = evaluate(answers)
+  const now = new Date()
+  const L: string[] = []
+  L.push(`# ${BRAND.tagline}`)
+  L.push('')
+  L.push(
+    `*Documento gerado a ${now.toLocaleString('pt-PT')} · Versão ${APP_VERSION} · Enquadramento ${REG_VERSION}*`,
+  )
+  if (meta.titulo) L.push(`\n**Projeto:** ${meta.titulo}`)
+  if (meta.instituicao) L.push(`**Instituição:** ${meta.instituicao}`)
+  L.push('')
+  if (r.nextSteps[0]) {
+    L.push(`> **O que deve fazer agora:** ${r.nextSteps[0]}`)
+    L.push('')
+  }
+  L.push(`## Conclusão — ${r.need.title}`)
+  L.push('')
+  L.push(r.need.summary)
+  L.push('')
+  if (r.circuits.length) {
+    L.push('## Circuito(s) provável(is)')
+    L.push('')
+    r.circuits.forEach((c) =>
+      L.push(`- **${c.label}**${c.url ? ` — <${c.url}>` : ''}${c.note ? `  \n  ${c.note}` : ''}`),
+    )
+    L.push('')
+  }
+  if (r.reasons.length) {
+    L.push('## Fundamentação')
+    L.push('')
+    r.reasons.forEach((x) => L.push(`- ${x}`))
+    L.push('')
+  }
+  if (r.pending.length) {
+    L.push('## Questões por esclarecer')
+    L.push('')
+    r.pending.forEach((x) => L.push(`- ${x}`))
+    L.push('')
+  }
+  if (r.nextSteps.length) {
+    L.push('## Próximos passos')
+    L.push('')
+    r.nextSteps.forEach((x) => L.push(`- ${x}`))
+    L.push('')
+  }
+  L.push('## Respostas dadas')
+  L.push('')
+  visibleQuestions(answers).forEach((q) => {
+    const opt = q.options.find((o) => o.value === answers[q.id])
+    L.push(`- **${q.text}** ${opt ? opt.label : '(sem resposta)'}`)
+  })
+  L.push('')
+  L.push('---')
+  L.push(
+    '*Ferramenta de orientação. Não substitui o parecer da comissão de ética competente, da CEIC ou do INFARMED, nem aconselhamento jurídico. Nenhuma resposta é enviada nem armazenada.*',
+  )
+  return L.join('\n')
+}
+
 export default function HomePage() {
   const initial = useMemo(() => loadInitial<Saved>(STORAGE_KEY), [])
   const [answers, setAnswers] = useState<Answers>(initial?.answers ?? {})
@@ -168,12 +245,12 @@ export default function HomePage() {
       /* clipboard indisponível */
     }
   }
-  function download() {
-    const blob = new Blob([buildFull(answers, meta)], { type: 'text/plain;charset=utf-8' })
+  function download(name: string, text: string) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'avaliacao-etica.txt'
+    a.download = name
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -390,21 +467,37 @@ export default function HomePage() {
             </>
           )}
 
+          <h3>Sugestão de resumo</h3>
+          <pre className="summary-box">{buildSummary(answers, meta)}</pre>
           <div className="result-actions no-print">
-            <button type="button" onClick={() => copyText(conclusionBlock(answers, meta), 'resumo')}>
+            <button type="button" onClick={() => copyText(buildSummary(answers, meta), 'resumo')}>
               {copied === 'resumo' ? 'Copiado ✓' : 'Copiar resumo'}
             </button>
-            <button type="button" onClick={download}>
-              Descarregar completo (.txt)
-            </button>
             <button type="button" onClick={copyLink}>
-              {copied === 'link' ? 'Link copiado ✓' : 'Copiar link'}
+              {copied === 'link' ? 'Link copiado ✓' : 'Copiar link partilhável'}
             </button>
+          </div>
+
+          <h3>Exportar relatório completo</h3>
+          <div className="result-actions no-print">
+            <span className="export-label">Exportar:</span>
             <button type="button" onClick={() => window.print()}>
-              Imprimir / PDF
+              PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => download('avaliacao-etica.md', buildMarkdown(answers, meta))}
+            >
+              Markdown (.md)
+            </button>
+            <button
+              type="button"
+              onClick={() => download('avaliacao-etica.txt', buildFull(answers, meta))}
+            >
+              Texto (.txt)
             </button>
             <button type="button" onClick={sendEmail}>
-              Enviar por email
+              Email
             </button>
             <button type="button" className="ghost" onClick={reset}>
               Recomeçar

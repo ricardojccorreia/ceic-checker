@@ -49,6 +49,51 @@ function buildReport(answers: Answers): string {
   return L.join('\n')
 }
 
+/** Resumo conciso, pronto a enviar. */
+function buildSummary(answers: Answers): string {
+  const r = evaluateGenAI(answers)
+  const L: string[] = []
+  L.push(`Percurso Ético — ${GENAI.tagline}`)
+  L.push('')
+  L.push(`Resultado (${RISK_LABEL[r.risk]}): ${r.title}`)
+  L.push(r.summary)
+  if (r.donts[0]) L.push(`Principal a evitar: ${r.donts[0]}`)
+  if (r.dos[0]) L.push(`Principal a fazer: ${r.dos[0]}`)
+  return L.join('\n')
+}
+
+/** Relatório completo em Markdown. */
+function buildMarkdown(answers: Answers): string {
+  const r = evaluateGenAI(answers)
+  const now = new Date()
+  const L: string[] = []
+  L.push(`# ${GENAI.tagline}`)
+  L.push('')
+  L.push(`*Documento gerado a ${now.toLocaleString('pt-PT')} · Versão ${APP_VERSION}*`)
+  L.push('')
+  L.push(`## Resultado (${RISK_LABEL[r.risk]}) — ${r.title}`)
+  L.push('')
+  L.push(r.summary)
+  L.push('')
+  if (r.reasons.length) {
+    L.push('## Porquê')
+    L.push('')
+    r.reasons.forEach((x) => L.push(`- ${x}`))
+    L.push('')
+  }
+  L.push('## ❌ Não fazer')
+  L.push('')
+  r.donts.forEach((x) => L.push(`- ${x}`))
+  L.push('')
+  L.push('## ✅ Fazer')
+  L.push('')
+  r.dos.forEach((x) => L.push(`- ${x}`))
+  L.push('')
+  L.push('---')
+  L.push('*Orientação, não aconselhamento jurídico. Nenhuma resposta é enviada nem armazenada.*')
+  return L.join('\n')
+}
+
 export default function GenAiPage() {
   const initial = useMemo(() => loadInitial<Saved>(STORAGE_KEY), [])
   const [answers, setAnswers] = useState<Answers>(initial?.answers ?? {})
@@ -109,14 +154,19 @@ export default function GenAiPage() {
       /* clipboard indisponível */
     }
   }
-  function download() {
-    const blob = new Blob([buildReport(answers)], { type: 'text/plain;charset=utf-8' })
+  function download(name: string, text: string) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'genai-dados-confidenciais.txt'
+    a.download = name
     a.click()
     URL.revokeObjectURL(url)
+  }
+  function sendEmail() {
+    const subject = encodeURIComponent(GENAI.tagline)
+    const body = encodeURIComponent(buildReport(answers))
+    window.location.href = `mailto:?subject=${subject}&body=${body}`
   }
 
   return (
@@ -231,18 +281,40 @@ export default function GenAiPage() {
             </div>
           </div>
 
+          <h3>Sugestão de resumo</h3>
+          <pre className="summary-box">{buildSummary(answers)}</pre>
           <div className="result-actions no-print">
-            <button type="button" onClick={() => copyText(buildReport(answers), 'resumo')}>
+            <button type="button" onClick={() => copyText(buildSummary(answers), 'resumo')}>
               {copied === 'resumo' ? 'Copiado ✓' : 'Copiar resumo'}
             </button>
-            <button type="button" onClick={download}>
-              Descarregar (.txt)
+            <button
+              type="button"
+              onClick={() => copyText(shareUrl(PATH, encodeState({ answers })), 'link')}
+            >
+              {copied === 'link' ? 'Link copiado ✓' : 'Copiar link partilhável'}
             </button>
-            <button type="button" onClick={() => copyText(shareUrl(PATH, encodeState({ answers })), 'link')}>
-              {copied === 'link' ? 'Link copiado ✓' : 'Copiar link'}
-            </button>
+          </div>
+
+          <h3>Exportar relatório completo</h3>
+          <div className="result-actions no-print">
+            <span className="export-label">Exportar:</span>
             <button type="button" onClick={() => window.print()}>
-              Imprimir / PDF
+              PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => download('genai-dados-confidenciais.md', buildMarkdown(answers))}
+            >
+              Markdown (.md)
+            </button>
+            <button
+              type="button"
+              onClick={() => download('genai-dados-confidenciais.txt', buildReport(answers))}
+            >
+              Texto (.txt)
+            </button>
+            <button type="button" onClick={sendEmail}>
+              Email
             </button>
             <button type="button" className="ghost" onClick={reset}>
               Recomeçar

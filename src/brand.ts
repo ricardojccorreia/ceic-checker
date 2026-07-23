@@ -3,7 +3,7 @@
  * Todo o conteúdo institucional está centralizado neste ficheiro.
  */
 
-export const APP_VERSION = '0.3.0'
+export const APP_VERSION = '0.4.0'
 /** Versão do enquadramento regulamentar refletido nas regras de decisão. */
 export const REG_VERSION = 'julho de 2026'
 
@@ -129,13 +129,37 @@ export const ABOUT = {
     'A ferramenta não recolhe, envia nem armazena qualquer resposta — todo o processamento ocorre no seu navegador.',
   ],
   legislation: [
-    { label: 'Lei n.º 71/2025 — investigação clínica e estudos de desempenho de dispositivos médicos', url: 'https://www.ceic.pt/nacional' },
-    { label: 'Lei n.º 9/2026', url: 'https://www.ceic.pt/nacional' },
-    { label: 'Regulamento (UE) dos ensaios clínicos e circuito CTIS', url: 'https://www.infarmed.pt/' },
-    { label: 'Regulamento (UE) dos dispositivos médicos e IVD', url: 'https://www.infarmed.pt/web/infarmed/entidades/dispositivos-medicos/investigacao-clinica-avaliacao-funcional/investigacao_clinica' },
-    { label: 'RGPD e enquadramento nacional de proteção de dados (CNPD)', url: 'https://www.cnpd.pt/' },
+    {
+      label: 'Lei n.º 9/2026, de 6 de março — ensaios clínicos de medicamentos; altera a Lei da Investigação Clínica (DR)',
+      url: 'https://diariodarepublica.pt/dr/detalhe/lei/9-2026-1068062486',
+    },
+    {
+      label: 'Lei n.º 21/2014 — Lei da Investigação Clínica, texto consolidado (DR)',
+      url: 'https://diariodarepublica.pt/dr/legislacao-consolidada/lei/2014-56927694',
+    },
+    {
+      label: 'Lei n.º 71/2025 — investigação clínica e estudos de desempenho de dispositivos médicos (DR)',
+      url: 'https://diariodarepublica.pt/dr/detalhe/lei/71-2025-992098941',
+    },
+    {
+      label: 'Regulamento (UE) n.º 536/2014 — ensaios clínicos de medicamentos (EUR-Lex)',
+      url: 'https://eur-lex.europa.eu/legal-content/PT/TXT/?uri=CELEX:32014R0536',
+    },
+    {
+      label: 'Regulamento (UE) 2017/745 — dispositivos médicos, MDR (EUR-Lex)',
+      url: 'https://eur-lex.europa.eu/legal-content/PT/TXT/?uri=CELEX:32017R0745',
+    },
+    {
+      label: 'Regulamento (UE) 2017/746 — dispositivos médicos para diagnóstico in vitro, IVDR (EUR-Lex)',
+      url: 'https://eur-lex.europa.eu/legal-content/PT/TXT/?uri=CELEX:32017R0746',
+    },
+    {
+      label: 'Regulamento (UE) 2016/679 — Proteção de Dados, RGPD (EUR-Lex)',
+      url: 'https://eur-lex.europa.eu/legal-content/PT/TXT/?uri=CELEX:32016R0679',
+    },
   ],
   changelog: [
+    { version: '0.4.0', date: '2026-07', notes: 'Outputs polidos (resumo + exportações PDF/Markdown/texto/email), ligações diretas ao Diário da República e EUR-Lex, e definição legal de investigação clínica (Lei 9/2026 e Lei 21/2014).' },
     { version: '0.3.0', date: '2026-07', notes: 'Nova ferramenta: uso responsável de IA generativa (genAI) com dados confidenciais, com resultado em semáforo e orientação prática.' },
     { version: '0.2.0', date: '2026-07', notes: 'Redesenho: fluxo ramificado, separação de circuitos (comissão institucional / CEIC / INFARMED / CTIS / RGPD), ramo para software/IA e dispositivos, resultado em duas dimensões.' },
     { version: '0.1.0', date: '2026-07', notes: 'Primeira versão: questionário simples com quatro veredictos.' },

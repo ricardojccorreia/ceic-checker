@@ -73,7 +73,11 @@ export const QUESTIONS: Question[] = [
     id: 'investigacao',
     section: 'natureza',
     text: 'Pretende realizar uma avaliação sistemática destinada a produzir conhecimento, validar um sistema ou divulgar resultados?',
-    help: 'Ajuda a separar a elaboração de uma ideia, o desenvolvimento de requisitos, um protótipo ou a melhoria da qualidade, da investigação científica ou clínica.',
+    help: 'A Lei da Investigação Clínica define investigação clínica como todo o estudo sistemático destinado a descobrir ou verificar a distribuição/efeito de fatores de saúde, ou o desempenho/segurança de intervenções ou da prestação de cuidados. Ajuda a separar uma ideia, protótipo ou melhoria da qualidade da investigação propriamente dita.',
+    ref: {
+      label: 'Definição legal (Lei da Investigação Clínica, art.º 1.º)',
+      url: 'https://diariodarepublica.pt/dr/legislacao-consolidada/lei/2014-56927694-56919752',
+    },
     options: YNU,
   },
 
